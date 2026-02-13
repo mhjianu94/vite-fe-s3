@@ -27,3 +27,9 @@ dist-ssr
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+# CDK
+cdk.out
+cdk.context.json
+*.d.ts
+!src/**/*.d.ts

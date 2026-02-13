@@ -1,0 +1,111 @@
+name: Deploy to AWS (Manual)
+
+on:
+  workflow_dispatch: # Manual trigger only
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      skip_build:
+        description: 'Skip build step (use existing dist folder)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  deploy:
+    name: Manual Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        if: ${{ !inputs.skip_build }}
+        run: npm run build
+
+      - name: Verify build output
+        if: ${{ !inputs.skip_build }}
+        run: |
+          if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+            echo "Error: dist directory is empty or does not exist"
+            exit 1
+          fi
+          echo "Build output verified: $(ls -la dist | head -5)"
+
+      - name: Check build exists (skip build mode)
+        if: ${{ inputs.skip_build }}
+        run: |
+          if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+            echo "Error: dist directory is empty or does not exist. Cannot skip build."
+            exit 1
+          fi
+          echo "Using existing build: $(ls -la dist | head -5)"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install CDK globally
+        run: npm install -g aws-cdk
+
+      - name: Bootstrap CDK (if needed)
+        run: |
+          # Check if bootstrap is needed (this will fail if already bootstrapped, which is fine)
+          cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ secrets.AWS_REGION }} || true
+        continue-on-error: true
+
+      - name: CDK Synth
+        run: npm run cdk:synth
+
+      - name: CDK Deploy
+        run: npm run cdk:deploy -- --require-approval never
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Get CloudFront URL
+        id: cloudfront
+        run: |
+          DISTRIBUTION_DOMAIN=$(aws cloudformation describe-stacks \
+            --stack-name FrontendStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+            --output text \
+            --region ${{ secrets.AWS_REGION }})
+          echo "url=$DISTRIBUTION_DOMAIN" >> $GITHUB_OUTPUT
+          echo "🚀 Deployment complete! CloudFront URL: https://$DISTRIBUTION_DOMAIN"
+          echo "Environment: ${{ inputs.environment }}"
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **CloudFront URL:** https://${{ steps.cloudfront.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Skipped:** ${{ inputs.skip_build }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+

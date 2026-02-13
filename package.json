@@ -1,5 +1,5 @@
 {
-  "name": "amplify-vite-react-template",
+  "name": "vite-fe-s3",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cdk": "cdk",
+    "cdk:deploy": "npm run build && cdk deploy",
+    "cdk:synth": "cdk synth",
+    "cdk:diff": "cdk diff",
+    "cdk:destroy": "cdk destroy"
   },
   "dependencies": {
     "react": "~18.3.1",
@@ -21,11 +26,17 @@
     "@eslint/compat": "^1.2.2",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.13.0",
+    "@types/node": "^20.14.0",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
     "@typescript-eslint/eslint-plugin": "^8.15.0",
     "@typescript-eslint/parser": "^8.15.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "aws-cdk": "^2.150.0",
+    "aws-cdk-lib": "^2.150.0",
+    "constructs": "^10.4.2",
+    "source-map-support": "^0.5.21",
+    "ts-node": "^10.9.2",
     "esbuild": "^0.24.0",
     "eslint": "^9.13.0",
     "eslint-plugin-react-hooks": "^5.1.0",
