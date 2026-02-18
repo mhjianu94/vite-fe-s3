@@ -18,6 +18,11 @@ jobs:
     permissions:
       contents: read
 
+    # Only run if commit message contains [deploy] or it's a manual trigger
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      contains(github.event.head_commit.message, '[deploy]')
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
