@@ -10,29 +10,15 @@ export class FrontendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Create S3 bucket for hosting static website
-    // Note: Bucket name will be auto-generated if not specified (recommended for uniqueness)
     const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
-      publicReadAccess: false, // CloudFront will handle access
+      publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // Change to RETAIN for production
-      autoDeleteObjects: true, // Automatically delete objects when bucket is deleted
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true, 
     });
 
-    // Create CloudFront Origin Access Control
-    const oac = new cloudfront.CfnOriginAccessControl(this, 'OAC', {
-      originAccessControlConfig: {
-        name: `${id}-OAC`,
-        originAccessControlOriginType: 's3',
-        signingBehavior: 'always',
-        signingProtocol: 'sigv4',
-      },
-    });
+    const s3Origin = origins.S3BucketOrigin.withOriginAccessControl(websiteBucket);
 
-    // Create S3 origin with OAC
-    const s3Origin = new origins.S3Origin(websiteBucket);
-
-    // Create CloudFront distribution
     const distribution = new cloudfront.Distribution(this, 'Distribution', {
       defaultBehavior: {
         origin: s3Origin,
@@ -57,43 +43,18 @@ export class FrontendStack extends cdk.Stack {
           ttl: cdk.Duration.minutes(5),
         },
       ],
-      priceClass: cloudfront.PriceClass.PRICE_CLASS_100, // Use only North America and Europe
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_100, 
     });
 
-    // Attach OAC to the distribution's default origin
-    const cfnDistribution = distribution.node.defaultChild as cloudfront.CfnDistribution;
-    
-    // Use addPropertyOverride to set OAC on the first origin
-    cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', oac.attrId);
-    cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.S3OriginConfig', undefined);
-
-    // Update bucket policy to allow CloudFront OAC access
-    websiteBucket.addToResourcePolicy(
-      new cdk.aws_iam.PolicyStatement({
-        sid: 'AllowCloudFrontServicePrincipal',
-        effect: cdk.aws_iam.Effect.ALLOW,
-        principals: [new cdk.aws_iam.ServicePrincipal('cloudfront.amazonaws.com')],
-        actions: ['s3:GetObject'],
-        resources: [websiteBucket.arnForObjects('*')],
-        conditions: {
-          StringEquals: {
-            'AWS:SourceArn': `arn:aws:cloudfront::${cdk.Aws.ACCOUNT_ID}:distribution/${distribution.distributionId}`,
-          },
-        },
-      })
-    );
-
-    // Deploy website files to S3
-    // Using process.cwd() to get the project root directory
     new s3deploy.BucketDeployment(this, 'DeployWebsite', {
       sources: [s3deploy.Source.asset(path.join(process.cwd(), 'dist'))],
       destinationBucket: websiteBucket,
       distribution: distribution,
       distributionPaths: ['/*'],
-      prune: true, // Remove old files
+      prune: true, 
     });
 
-    // Outputs
+
     new cdk.CfnOutput(this, 'DistributionDomainName', {
       value: distribution.distributionDomainName,
       description: 'CloudFront Distribution Domain Name',
