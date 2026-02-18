@@ -24,6 +24,10 @@
     "resolveJsonModule": true
   },
   "include": ["bin/**/*", "lib/**/*"],
-  "exclude": ["node_modules", "cdk.out", "dist", "src"]
+  "exclude": ["node_modules", "cdk.out", "dist", "src"],
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
 }
 
