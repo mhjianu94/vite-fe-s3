@@ -33,11 +33,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         run: npm ci
 
       - name: Build application
         run: npm run build
+
+      - name: Install infrastructure dependencies
+        working-directory: ./infrastructure
+        run: npm ci
 
       - name: Verify build output
         run: |
@@ -63,9 +67,11 @@ jobs:
         continue-on-error: true
 
       - name: CDK Synth
+        working-directory: ./infrastructure
         run: npm run cdk:synth
 
       - name: CDK Deploy
+        working-directory: ./infrastructure
         run: npm run cdk:deploy -- --require-approval never
         env:
           CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}

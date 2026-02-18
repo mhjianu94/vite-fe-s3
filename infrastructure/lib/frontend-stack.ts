@@ -46,8 +46,10 @@ export class FrontendStack extends cdk.Stack {
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100, 
     });
 
+    // Get the dist folder path - go up from infrastructure to root
+    const distPath = path.resolve(process.cwd(), '..', 'dist');
     new s3deploy.BucketDeployment(this, 'DeployWebsite', {
-      sources: [s3deploy.Source.asset(path.join(process.cwd(), 'dist'))],
+      sources: [s3deploy.Source.asset(distPath)],
       destinationBucket: websiteBucket,
       distribution: distribution,
       distributionPaths: ['/*'],
