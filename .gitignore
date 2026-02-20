@@ -23,6 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment (Cognito keys, etc.)
+.env
+.env.local
+.env.*.local
+
 # amplify
 .amplify
 amplify_outputs*

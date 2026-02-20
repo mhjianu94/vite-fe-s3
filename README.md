@@ -12,6 +12,7 @@ This template provides a clean, production-ready React application setup with Vi
 - **Vite** - Fast build tool and development server
 - **TypeScript** - Type-safe development
 - **ESLint** - Code quality and consistency
+- **Dark mode** - Tailwind class-based theme (light/dark), persisted in localStorage; toggle in the Home navbar
 - **AWS CDK** - Infrastructure as code for S3 + CloudFront deployment
 
 ## Getting Started
@@ -58,15 +59,30 @@ This template provides a clean, production-ready React application setup with Vi
 
 ```
 .
-├── src/              # Source files
-│   ├── App.tsx      # Main App component
-│   ├── main.tsx     # Application entry point
+├── infrastructure/       # CDK infrastructure (separate package.json)
+│   ├── bin/cdk.ts        # CDK app entry
+│   ├── lib/              # Stack definitions (e.g. frontend-stack.ts)
+│   ├── package.json      # Infra dependencies
+│   ├── cdk.json
+│   └── tsconfig.cdk.json
+├── src/                  # React application source
+│   ├── App.tsx           # Main App and routes
+│   ├── main.tsx          # Entry point
+│   ├── pages/            # Route-level pages
+│   ├── components/      # Page-specific and shared UI (see .cursor/rules/INSTRUCTIONS.md)
+│   ├── atoms/            # Jotai state
+│   ├── lib/              # Auth, config
+│   ├── utils/            # Generic helpers
 │   └── ...
-├── public/          # Static assets
-├── index.html       # HTML template
-├── vite.config.ts   # Vite configuration
-└── tsconfig.json    # TypeScript configuration
+├── public/               # Static assets
+├── index.html            # HTML template
+├── vite.config.ts        # Vite configuration
+├── tsconfig.json         # TypeScript configuration
+├── package.json          # Frontend dependencies
+└── dist/                 # Build output (generated)
 ```
+
+When the project layout changes, update this section and the Directory Layout in `.cursor/rules/INSTRUCTIONS.md` so both stay accurate.
 
 ## Deployment
 
